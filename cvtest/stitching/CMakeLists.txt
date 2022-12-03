@@ -1,11 +1,9 @@
-﻿# CMakeList.txt : CMake project for cvtest, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+# find all src at this directory
+# and save to DIR_LIB_SRCS
+aux_source_directory(. DIR_LIB_SRCS)
+# generate StitchingFunctions lib
+add_library (StitchingFunctions ${DIR_LIB_SRCS})
 
-add_subdirectory ("stitching")
-# Add source to this project's executable.
-add_executable (cvtest "cvtest.cpp" "cvtest.h")
 set (OpenCV_DIR D:/Downloads/opencv/build)
 #requires opencv
 find_package(OpenCV 4 REQUIRED)
@@ -16,6 +14,4 @@ MESSAGE("opencv version: ${OpenCV_VERSION}")
   # Additional Library Directories
   link_directories(${OpenCV_LIBRARY_DIRS})
   # Additional Dependencies
-  target_link_libraries( cvtest ${OpenCV_LIBS} )
-
-# TODO: Add tests and install targets if needed.
+  target_link_libraries( StitchingFunctions ${OpenCV_LIBS} )
