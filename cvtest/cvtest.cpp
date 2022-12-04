@@ -11,30 +11,24 @@
 #include "opencv2/xfeatures2d/cuda.hpp"
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudawarping.hpp"
+#include <opencv2/core/opengl.hpp>
+#include "stitching/EstimateRigid.h"
+
 
 using namespace cv;
 using namespace std;
 
-
-cv::cuda::GpuMat stitchingTwoImagesByHomography() {
-}
-
 int main()
 {
-	cv::namedWindow("example3", cv::WINDOW_AUTOSIZE);
-	cv::VideoCapture cap;
-	cap.open(0);
-	
-	cv::Mat frame;
-	for (;;) {
-		cap>>frame;
-		if(frame.empty()) break;
-		cv::imshow("example3", frame);
-		if( cv::waitKey(33)>=0) break;
-	}
-
 	// Read images
-	//Mat color = imread("../lena.jpg");
+	Mat image1 = imread("d:/1.png");
+	Mat image2 = imread("d:/2.png");
+	cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByEstimateRigid(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
+	cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());
+	stitchingGpuMat.download(result_);
+	imshow("Stitching Result", result_);
+	//imshow("Stitching Result", cv::ogl::Texture2D(stitchingGpuMat));
+	waitKey(0);
 	//Mat gray = imread("../lena.jpg", IMREAD_GRAYSCALE);
 
 	//if (!color.data) // Check for invalid input

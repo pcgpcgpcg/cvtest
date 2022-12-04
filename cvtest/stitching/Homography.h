@@ -12,4 +12,4 @@
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaimgproc.hpp>
 
-cv::cuda::GpuMat stitchingTwoImagesByHomography();
+cv::cuda::GpuMat stitchingTwoImagesByHomography(cv::cuda::GpuMat& img1_gpu, cv::cuda::GpuMat& img2_gpu);

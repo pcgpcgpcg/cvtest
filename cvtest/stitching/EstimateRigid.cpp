@@ -1,5 +1,6 @@
 #include "EstimateRigid.h"
-cv::cuda::GpuMat stitchingTwoImagesByEstimateRigid() {
+
+cv::cuda::GpuMat stitchingTwoImagesByEstimateRigid(cv::cuda::GpuMat& img1_gpu, cv::cuda::GpuMat& img2_gpu) {
 	cv::cuda::GpuMat img1_gray_gpu, img2_gray_gpu;
 	cv::cuda::cvtColor(img1_gpu, img1_gray_gpu, cv::COLOR_BGR2GRAY);
 	cv::cuda::cvtColor(img2_gpu, img2_gray_gpu, cv::COLOR_BGR2GRAY);
@@ -43,12 +44,14 @@ cv::cuda::GpuMat stitchingTwoImagesByEstimateRigid() {
 		dst_pts.push_back(keypoints1[m.trainIdx].pt);
 	}
 
-	cv::Mat A = cv::estimateRigidTransform(src_pts, dst_pts, false);
-	int height1 = img1.rows, width1 = img1.cols;
-	int height2 = img2.rows, width2 = img2.cols;
+	//cv::Mat A = cv::estimateRigidTransform(src_pts, dst_pts, false);
+	cv::Mat A = cv::estimateAffinePartial2D(src_pts, dst_pts); //estimateRigidTransform was deprecated at opencv 3.5
+	
+	int height1 = img1_gpu.rows, width1 = img1_gpu.cols;
+	int height2 = img2_gpu.rows, width2 = img2_gpu.cols;
 
-	std::vector<std::vector<float>> corners1{ {0,0},{0,height1},{width1,height1},{width1,0} };
-	std::vector<std::vector<float>> corners2{ {0,0},{0,height2},{width2,height2},{width2,0} };
+	std::vector<std::vector<float>> corners1{ {0,0},{0,(float)height1},{(float)width1,(float)height1},{(float)width1,0} };
+	std::vector<std::vector<float>> corners2{ {0,0},{0,(float)height2},{(float)width2,(float)height2},{(float)width2,0} };
 
 	std::vector<std::vector<float>> warpedCorners2(4, std::vector<float>(2));
 	std::vector<std::vector<float>> allCorners = corners1;
