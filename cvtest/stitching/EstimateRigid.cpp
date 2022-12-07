@@ -46,7 +46,7 @@ cv::cuda::GpuMat stitchingTwoImagesByEstimateRigid(cv::cuda::GpuMat& img1_gpu, c
 
 	//cv::Mat A = cv::estimateRigidTransform(src_pts, dst_pts, false);
 	cv::Mat A = cv::estimateAffinePartial2D(src_pts, dst_pts); //estimateRigidTransform was deprecated at opencv 3.5
-	
+
 	int height1 = img1_gpu.rows, width1 = img1_gpu.cols;
 	int height2 = img2_gpu.rows, width2 = img2_gpu.cols;
 
@@ -110,6 +110,10 @@ cv::cuda::GpuMat stitchingTwoImagesByEstimateRigid(cv::cuda::GpuMat& img1_gpu, c
 	cv::cuda::multiply(diff, warpedResImg, warpedResImg);
 	cv::cuda::add(warpedResImg, warpedImage2, dst);
 	dst.convertTo(dst, type);
+
+	keypoints1.clear();
+	keypoints2.clear();
+	matcher.release();
 
 	return dst;
 }

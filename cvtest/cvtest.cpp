@@ -13,6 +13,7 @@
 #include "opencv2/cudawarping.hpp"
 #include <opencv2/core/opengl.hpp>
 #include "stitching/EstimateRigid.h"
+#include "stitching/Homography.h"
 
 
 using namespace cv;
@@ -20,37 +21,43 @@ using namespace std;
 
 int main()
 {
-	// Read images
-	Mat image1 = imread("d:/1.png");
-	Mat image2 = imread("d:/2.png");
-	cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByEstimateRigid(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
-	cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());
-	stitchingGpuMat.download(result_);
-	imshow("Stitching Result", result_);
-	//imshow("Stitching Result", cv::ogl::Texture2D(stitchingGpuMat));
+	// Read videos
+	cv::VideoCapture cap_1("d:/videoplayback1920x1080left.mp4");
+	cv::VideoCapture cap_2("d:/videoplayback1920x1080right.mp4");
+	for (int i = 0; i < 2000; i++)
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		cv::UMat seq_1, seq_2;
+		cap_1 >> seq_1;
+		cap_2 >> seq_2;
+		cv::cuda::GpuMat src1, src2;
+		src1.upload(seq_1);
+		src2.upload(seq_2);
+		cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(src1, src2);
+		//show result
+		cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());
+		stitchingGpuMat.download(result_);
+		auto finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed = finish - start;
+		std::cout << "*************Elapsed time new: " << elapsed.count() << " s\n";
+		imshow("Stitching Result", result_);
+		int key = waitKey(33);
+		if (key == 27) {
+			break;
+		}
+	}
+	cap_1.release();
+	cap_2.release();
+
+	//// Read images
+	//Mat image1 = imread("d:/road1.png");
+	//Mat image2 = imread("d:/road2.png");
+	//cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
+	////cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
+	//cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());
+	//stitchingGpuMat.download(result_);
+	//imshow("Stitching Result", result_);
 	waitKey(0);
-	//Mat gray = imread("../lena.jpg", IMREAD_GRAYSCALE);
 
-	//if (!color.data) // Check for invalid input
-	//{
-	//	cout << "Could not open or find the image" << std::endl;
-	//	return -1;
-	//}
-
-	//// Write images
-	//imwrite("lenaGray.jpg", gray);
-
-	//// Get same pixel with opencv function
-	//int myRow = color.rows - 1;
-	//int myCol = color.cols - 1;
-	//auto pixel = color.at<Vec3b>(myRow, myCol);
-	//cout << "Pixel value (B,G,R): (" << (int)pixel[0] << "," << (int)pixel[1] << "," << (int)pixel[2] << ")" << endl;
-
-	//// show images
-	//imshow("Lena BGR", color);
-	//imshow("Lena Gray", gray);
-	//// wait for any key press
-	//waitKey(0);
-	//cout << "Hello CMake." << endl;
 	return 0;
 }
