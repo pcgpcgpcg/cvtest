@@ -22,8 +22,8 @@ using namespace std;
 int main()
 {
 	// Read videos
-	cv::VideoCapture cap_1("d:/videoplayback1920x1080left.mp4");
-	cv::VideoCapture cap_2("d:/videoplayback1920x1080right.mp4");
+	cv::VideoCapture cap_1("d:/videoplayback1920x1080right.mp4");
+	cv::VideoCapture cap_2("d:/videoplayback1920x1080left.mp4");
 	for (int i = 0; i < 2000; i++)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
@@ -35,6 +35,9 @@ int main()
 		src2.upload(seq_2);
 		cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(src1, src2);
 		//show result
+		if (stitchingGpuMat.rows == 0) {
+			continue;
+		}
 		cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());
 		stitchingGpuMat.download(result_);
 		auto finish = std::chrono::high_resolution_clock::now();
@@ -50,8 +53,8 @@ int main()
 	cap_2.release();
 
 	//// Read images
-	//Mat image1 = imread("d:/road1.png");
-	//Mat image2 = imread("d:/road2.png");
+	//Mat image1 = imread("d:/road2.png");
+	//Mat image2 = imread("d:/road1.png");
 	//cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
 	////cv::cuda::GpuMat stitchingGpuMat = stitchingTwoImagesByHomography(cv::cuda::GpuMat(image1), cv::cuda::GpuMat(image2));
 	//cv::Mat result_(stitchingGpuMat.size(), stitchingGpuMat.type());

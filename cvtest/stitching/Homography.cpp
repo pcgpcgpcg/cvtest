@@ -101,8 +101,8 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 	cv::cuda::cvtColor(img2_gpu, gray_image2, cv::COLOR_BGR2GRAY);
 
 	//Find the Homography Matrix
-	if (first) {
-#if 0
+	if (1) {
+#if 1
 		//--Step 1 : Detect the keypoints using SURF Detector
 		auto start = std::chrono::high_resolution_clock::now();
 		SURF_CUDA surf = cv::cuda::SURF_CUDA::SURF_CUDA(400, 4, 3, false, 0.01f, false);
@@ -153,14 +153,16 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 
 		for (int i = 0; i < descriptors1GPU.rows; i++)
 		{
-			if (matches[i].distance < 3 * max_dist * 0.2)
+			if (matches[i].distance < 3 * min_dist)
 			{
 				good_matches.push_back(matches[i]);
 			}
 		}
 		std::vector< Point2f > obj;
 		std::vector< Point2f > scene;
-
+		if (good_matches.size() < 4) {
+			return GpuMat();
+		}
 		for (int i = 0; i < good_matches.size(); i++)
 		{
 			//--Get the keypoints from the good matches
@@ -173,6 +175,9 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 		//drawMatches(img1_gpu, keypoints1, img2_gpu, keypoints2, good_matches, img_matches2, Scalar::all(-1),
 		//	Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 		Mat H = findHomography(obj, scene, RANSAC);
+		if (H.rows == 0) {
+			return GpuMat();
+		}
 		homo = H;
 		first = false;
 #else
@@ -221,6 +226,8 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 	cv::cuda::GpuMat result;
 	//cv::cuda::GpuMat gpuInput = cv::cuda::GpuMat(image1);
 	cv::cuda::warpPerspective(img1_gpu, result, homo, cv::Size(img1_gpu.cols + img2_gpu.cols, img1_gpu.rows));
+	cv::cuda::GpuMat half(result, cv::Rect(0, 0, img2_gpu.cols, img2_gpu.rows));
+	img2_gpu.copyTo(half);
 
 	//cv::Mat half(result, cv::Rect(0, 0, image2.cols, image2.rows));
 	//image2.copyTo(half);
