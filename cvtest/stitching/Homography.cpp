@@ -102,6 +102,7 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 
 	//Find the Homography Matrix
 	if (first) {
+#if 0
 		//--Step 1 : Detect the keypoints using SURF Detector
 		auto start = std::chrono::high_resolution_clock::now();
 		SURF_CUDA surf = cv::cuda::SURF_CUDA::SURF_CUDA(400, 4, 3, false, 0.01f, false);
@@ -126,7 +127,6 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 		surf.downloadKeypoints(keypoints2GPU, keypoints2);
 		surf.downloadDescriptors(descriptors1GPU, descriptors1);
 		surf.downloadDescriptors(descriptors2GPU, descriptors2);
-
 		//// drawing the results
 		//Mat img_matches;
 		//drawMatches(Mat(img1), keypoints1, Mat(img2), keypoints2, matches, img_matches);
@@ -169,14 +169,50 @@ GpuMat stitchingTwoImagesByHomography(GpuMat& img1_gpu, GpuMat& img2_gpu) {
 		}
 
 		//-- Draw matches
-		Mat img_matches2;
+		//Mat img_matches2;
 		//drawMatches(img1_gpu, keypoints1, img2_gpu, keypoints2, good_matches, img_matches2, Scalar::all(-1),
 		//	Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-
-
 		Mat H = findHomography(obj, scene, RANSAC);
 		homo = H;
 		first = false;
+#else
+		cv::Ptr<cv::cuda::ORB> orb = cv::cuda::ORB::create(9000);
+		cv::cuda::GpuMat keypoints1GPU, keypoints2GPU;
+		cv::cuda::GpuMat descriptors1GPU, descriptors2GPU;
+		std::vector< cv::KeyPoint > keypoints_scene, keypoints_object;
+		cv::Ptr< cv::cuda::DescriptorMatcher > matcher = cv::cuda::DescriptorMatcher::createBFMatcher(cv::NORM_HAMMING);
+		std::vector< std::vector< cv::DMatch> > matches;
+
+		orb->detectAndComputeAsync(gray_image1, cv::noArray(), keypoints1GPU, descriptors1GPU, false);
+		orb->detectAndComputeAsync(gray_image2, cv::noArray(), keypoints2GPU, descriptors2GPU, false);
+		orb->convert(keypoints1GPU, keypoints_object);
+		orb->convert(keypoints2GPU, keypoints_scene);
+
+		//cout << "KPTS = " << keypoints_scene.size() << endl;
+
+		matcher->knnMatch(descriptors1GPU, descriptors2GPU, matches, 2);
+
+		std::vector< cv::DMatch > good_matches;
+
+		for (int z = 0; z < std::min(keypoints_object.size() - 1, matches.size()); z++)
+		{
+			if (matches[z][0].distance < 0.75 * (matches[z][1].distance))
+			{
+				good_matches.push_back(matches[z][0]);
+			}
+		}
+
+		std::vector<cv::Point2f> obj;
+		std::vector<cv::Point2f> scene;
+		for (int y = 0; y < good_matches.size(); y++)
+		{
+			obj.push_back(keypoints_object[good_matches[y].queryIdx].pt);
+			scene.push_back(keypoints_scene[good_matches[y].trainIdx].pt);
+		}
+		//cout << "Match points = " << good_matches.size() << endl;
+		homo = cv::findHomography(obj, scene, cv::RANSAC);
+		first = false;
+#endif
 	}
 
 
